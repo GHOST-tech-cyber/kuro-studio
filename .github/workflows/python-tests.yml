@@ -22,4 +22,4 @@ jobs:
           python-version: "3.11"
 
       - name: Run PRIDE tests
-        run: python -m unittest -v test_kuro_core.py
+        run: python -m unittest -v test_kuro_core.py test_kuro_stress.py
