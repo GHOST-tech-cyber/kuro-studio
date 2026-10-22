@@ -1,5 +1,6 @@
 
-"""PRIDE Kernel v0.2 — Initial Stress Tests
+"""PRIDE Kernel v0.2 - Initial Stress Tests.
+
 Safe, simulated tests only. No real malware is executed.
 """
 
@@ -11,7 +12,6 @@ from kuro_core import PrideKernel, SystemState, AgentStatus
 class PrideStressTests(unittest.TestCase):
 
     def setUp(self):
-        # Give every test a fresh kernel.
         self.kernel = PrideKernel()
 
     def test_01_workforce_survives_repeated_checks(self):
@@ -19,19 +19,19 @@ class PrideStressTests(unittest.TestCase):
             self.assertEqual(len(self.kernel.agents), 15)
 
     def test_02_mass_report_submission(self):
-        # Simulate a burst of 1000 ordinary reports.
         initial_count = len(self.kernel.reports)
 
         for i in range(1000):
-            self.kernel.submit_report(
+            result = self.kernel.submit_report(
                 "KURO-07",
                 "diagnostic",
-                f"Simulated stress report {i}"
+                f"Simulated stress report {i}",
             )
+            self.assertTrue(result["ok"])
 
         self.assertEqual(
             len(self.kernel.reports),
-            initial_count + 1000
+            initial_count + 1000,
         )
 
     def test_03_quarantined_agent_is_restricted(self):
@@ -39,19 +39,23 @@ class PrideStressTests(unittest.TestCase):
 
         self.assertEqual(
             self.kernel.agents["KURO-07"].status,
-            AgentStatus.QUARANTINED
+            AgentStatus.QUARANTINED,
         )
 
-        self.assertFalse(
-            self.kernel.authorize("KURO-07", "routing.manage")
+        allowed, reason = self.kernel.authorize(
+            "KURO-07", "routing.manage"
         )
+        self.assertFalse(allowed)
+        self.assertIn("QUARANTINED", reason)
 
     def test_04_lockdown_blocks_authorized_operations(self):
         self.kernel.set_system_state(SystemState.LOCKDOWN)
 
-        self.assertFalse(
-            self.kernel.authorize("KURO-01", "registry.read")
+        allowed, reason = self.kernel.authorize(
+            "KURO-01", "registry.read"
         )
+        self.assertFalse(allowed)
+        self.assertIn("LOCKDOWN", reason)
 
     def test_05_repeated_state_changes(self):
         for _ in range(100):
